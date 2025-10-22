@@ -2,6 +2,8 @@ package testes_SD;
 
 import java.net.*;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.*;
@@ -65,20 +67,25 @@ public class EchoServerTCP_Thread_Server extends Thread {
       try {
          PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
          BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+         String loginLine;
          String inputLine;
          
-         if ((inputLine = in.readLine()) != null) {
-        	 replyLogin(inputLine);
-         }
-
-         while (inputLine != null) {
-            System.out.println("Servidor recebeu: " + inputLine);
-            String sentText = new String(inputLine.toUpperCase());
-            System.out.println("Servidor enviou: " + sentText);
-            out.println(sentText);
-
-            if (inputLine.toUpperCase().equals("BYE"))
-               break;
+         if ((loginLine = in.readLine()) != null) {
+        	 System.out.println(loginLine);
+        	 replyLogin(loginLine);
+        	 
+         
+        	 while ((inputLine = in.readLine()) != null) {
+	            System.out.println("Servidor recebeu: " + inputLine);
+	            String sentText = new String(inputLine.toUpperCase());
+	            System.out.println("Servidor enviou: " + sentText);
+	            out.println(sentText);
+	
+	            if (inputLine.toUpperCase().equals("BYE"))
+	               break;
+	         }
+         } else {
+        	 System.out.println("No login recieved.");
          }
 
          out.close();
@@ -89,9 +96,17 @@ public class EchoServerTCP_Thread_Server extends Thread {
          System.exit(1);
       }
    }
+   
    public void replyLogin(String recievedJson) {
-	   ObjectMapper objectMapper = new ObjectMapper();
+	   try {
+	   	ObjectMapper objectMapper = new ObjectMapper();
    		UserClass obj = objectMapper.readValue(recievedJson, UserClass.class);
+   		System.out.println("login do usuário" + obj.getUsuario());
+	   } catch (JsonMappingException e) {
+		   System.out.println("Jackson mapping error caught.");
+	   } catch (JsonProcessingException e) {
+		   System.out.println("Jackson processing error caught.");
+	   }
    }
    /*
    

@@ -36,16 +36,16 @@ public class EchoServerTCP_Thread_Client extends Thread{
             System.exit(1);
         }
         
-        EchoServerTCP_Thread_Client client = new EchoServerTCP_Thread_Client();
 
-        String token = login(br, in, out);
-        String userInput;
+        String userLogin = new String( login(br, in, out));
+        out.println(userLogin);
         System.out.println("Servidor retornou: " + in.readLine());
         
-        System.out.println(token);
+        
         System.out.println("Conectado. Digite (\"bye\" para sair)");
         System.out.print("Digite: ");
         
+        String userInput;
         // data transmission loop
         while ((userInput = br.readLine()) != null) {
             out.println(userInput);
@@ -78,14 +78,14 @@ public class EchoServerTCP_Thread_Client extends Thread{
         // --- CHANGE 3: The local class now has a constructor to accept values ---
         
         
-        UserClass obj = new UserClass(userLogin, userPassword); // Create the object using the constructor
+        UserClass obj = new UserClass("LOGIN",userLogin, userPassword); // Create the object using the constructor
         if (obj.getUsuario().length() > 20 || obj.getUsuario().length() < 3) {
         	return null;
         }
         
         if (obj.getSenha().length() > 20 || obj.getSenha().length() < 3) {
         	return null;
-        	
+        }
         	
         ObjectMapper mapper = new ObjectMapper();
         
@@ -160,4 +160,5 @@ public class EchoServerTCP_Thread_Client extends Thread{
     }
     
     */
+
 }
