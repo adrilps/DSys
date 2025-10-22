@@ -1,6 +1,9 @@
 package testes_SD;
 
 import java.net.*;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import java.io.*;
 
 /**
@@ -62,13 +65,17 @@ public class EchoServerTCP_Thread_Server extends Thread {
       try {
          PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
          BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-
          String inputLine;
+         
+         if ((inputLine = in.readLine()) != null) {
+        	 replyLogin(inputLine);
+         }
 
-         while ((inputLine = in.readLine()) != null) {
+         while (inputLine != null) {
             System.out.println("Servidor recebeu: " + inputLine);
-            System.out.println("Servidor enviou: " + inputLine.toUpperCase());
-            out.println(inputLine.toUpperCase());
+            String sentText = new String(inputLine.toUpperCase());
+            System.out.println("Servidor enviou: " + sentText);
+            out.println(sentText);
 
             if (inputLine.toUpperCase().equals("BYE"))
                break;
@@ -82,10 +89,11 @@ public class EchoServerTCP_Thread_Server extends Thread {
          System.exit(1);
       }
    }
-   
-   public void replyLogin(String login, String password) {
-   	
+   public void replyLogin(String recievedJson) {
+	   ObjectMapper objectMapper = new ObjectMapper();
+   		UserClass obj = objectMapper.readValue(recievedJson, UserClass.class);
    }
+   /*
    
    public void replyLogout() {
    	
@@ -134,5 +142,6 @@ public class EchoServerTCP_Thread_Server extends Thread {
    public void replyDeleteUser() {
    	
    }
+   */
    
 }

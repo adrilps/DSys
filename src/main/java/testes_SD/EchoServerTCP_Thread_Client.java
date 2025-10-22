@@ -39,10 +39,24 @@ public class EchoServerTCP_Thread_Client extends Thread{
         EchoServerTCP_Thread_Client client = new EchoServerTCP_Thread_Client();
 
         String token = login(br, in, out);
+        String userInput;
+        System.out.println("Servidor retornou: " + in.readLine());
         
-
+        System.out.println(token);
         System.out.println("Conectado. Digite (\"bye\" para sair)");
         System.out.print("Digite: ");
+        
+        // data transmission loop
+        while ((userInput = br.readLine()) != null) {
+            out.println(userInput);
+
+            // end loop
+            if (userInput.toUpperCase().equals("BYE"))
+                break;
+
+            System.out.println("Servidor retornou: " + in.readLine());
+            System.out.print("Digite: ");
+        }
 
         out.close();
         in.close();
@@ -62,41 +76,27 @@ public class EchoServerTCP_Thread_Client extends Thread{
         br = new BufferedReader(new InputStreamReader(System.in));
         String userPassword = br.readLine();
         // --- CHANGE 3: The local class now has a constructor to accept values ---
-        class MyObject {
-            public String operacao = "LOGIN"; // public so Jackson can see it
-            public String usuario;
-            public String senha;
-
-            // Constructor for MyObject
-            public MyObject(String user, String pass) {
-                this.usuario = userLogin;
-                this.senha = userPassword;
-            }
-        }
-        // --- CHANGE 4: Use writeValueAsString() to get a JSON string ---
-        if (userLogin.length() > 20 || userLogin.length() < 3) {
+        
+        
+        UserClass obj = new UserClass(userLogin, userPassword); // Create the object using the constructor
+        if (obj.getUsuario().length() > 20 || obj.getUsuario().length() < 3) {
         	return null;
         }
         
-        if (userPassword.length() > 20 || userLogin.length() < 3) {
+        if (obj.getSenha().length() > 20 || obj.getSenha().length() < 3) {
         	return null;
-        }
-        
-        
-        MyObject obj = new MyObject(userLogin, userPassword); // Create the object using the constructor
+        	
+        	
         ObjectMapper mapper = new ObjectMapper();
         
-        System.out.println("Servidor retornou: " + in.readLine());
         try {
             String outputJson = mapper.writeValueAsString(obj);
             System.out.println("JSON created successfully.");
-            out.print(outputJson);
             return outputJson;
         } catch (JsonProcessingException e) {
             e.printStackTrace(); // Handle potential JSON processing errors
             return null; // Return null if there's an error
         }
-        System.out.println("Servidor retornou: " + in.readLine());
     }
     /*
     public void logout() {
