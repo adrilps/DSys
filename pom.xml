@@ -6,19 +6,24 @@
     <groupId>com.example</groupId>
     <artifactId>my-cool-app</artifactId>
     <version>1.0.0</version>
-    <packaging>jar</packaging> <properties>
+    <packaging>jar</packaging> 
+    
+    <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
     </properties>
 
     <dependencies>
-		<!-- https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-databind -->
 		<dependency>
 		    <groupId>com.fasterxml.jackson.core</groupId>
 		    <artifactId>jackson-databind</artifactId>
-		    <version>2.20.0</version>
-		</dependency>	
+		    <version>2.17.1</version> </dependency>
+		<dependency>
+		    <groupId>com.auth0</groupId>
+		    <artifactId>java-jwt</artifactId>
+		    <version>4.4.0</version>
+		</dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>
@@ -29,7 +34,7 @@
 
     <build>
 	    <plugins>
-	        <plugin>
+            <plugin>
 	            <groupId>org.apache.maven.plugins</groupId>
 	            <artifactId>maven-jar-plugin</artifactId>
 	            <version>3.3.0</version>
@@ -41,6 +46,29 @@
 	                </archive>
 	            </configuration>
 	        </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <version>3.7.1</version> <configuration>
+                    <archive>
+                        <manifest>
+                            <mainClass>testes_SD.EchoServerTCP_Thread_Server</mainClass>
+                        </manifest>
+                    </archive>
+                    <descriptorRefs>
+                        <descriptorRef>jar-with-dependencies</descriptorRef>
+                    </descriptorRefs>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>make-assembly</id>
+                        <phase>package</phase> <goals>
+                            <goal>single</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
 	    </plugins>
 	</build>
 

@@ -5,6 +5,9 @@ public class UserClass {
         public String usuario;
         public String senha;
 
+        public UserClass() {
+        }
+        
         // Constructor for MyObject
         public UserClass(String operation,String user, String pass) {
         	this.operacao = operation;
