@@ -1,0 +1,4 @@
+1;admin;admin;ADMIN_ROLE
+3;beleleu;beleleu;USER_ROLE
+4;aaaa;aaa;USER_ROLE
+5;isabel;abs;USER_ROLE

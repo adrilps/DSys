@@ -11,7 +11,7 @@ import java.util.stream.Collectors;
 
 public class UsuarioService {
 
-    private static final String FILE_PATH = "C:\\Users\\paulo\\OneDrive\\Desktop\\SDistribuidos\\Usuários.txt";
+    private static final String FILE_PATH = "C:\\Users\\paulo\\eclipse-workspace\\DSys\\SDistribuidos\\Usuários.txt";
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
     private final ReentrantReadWriteLock.ReadLock readLock = lock.readLock();
     private final ReentrantReadWriteLock.WriteLock writeLock = lock.writeLock();
