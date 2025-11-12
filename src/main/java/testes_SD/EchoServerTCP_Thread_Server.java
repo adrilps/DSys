@@ -123,7 +123,7 @@ public class EchoServerTCP_Thread_Server extends Thread {
                             continue;
                         }
                         this.nomeUsuarioLogado = jwtValido.getClaim("nome").asString();
-                        this.roleUsuarioLogado = jwtValido.getClaim("role").asString();
+                        this.roleUsuarioLogado = jwtValido.getClaim("funcao").asString();
                     }
 
                     // 2. Distribuir (Dispatch)

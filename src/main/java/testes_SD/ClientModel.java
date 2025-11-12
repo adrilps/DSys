@@ -187,10 +187,11 @@ public class ClientModel {
             Base64.Decoder decoder = Base64.getUrlDecoder();
 
             String payloadJson = new String(decoder.decode(chunks[1]));
+            
             JsonNode payloadNode = mapper.readTree(payloadJson);
             
-            if (payloadNode.has("role")) {
-                return payloadNode.get("role").asText();
+            if (payloadNode.has("funcao")) {
+                return payloadNode.get("funcao").asText();
             }
         } catch (Exception e) {
             System.err.println("Erro ao decodificar o token JWT: " + e.getMessage());

@@ -11,7 +11,7 @@ import java.util.stream.Collectors;
 
 public class UsuarioService {
 
-    private static final String FILE_PATH = "C:\\Users\\paulo\\eclipse-workspace\\DSys\\SDistribuidos\\Usuários.txt";
+    private static final String USERS_FILE_PATH = "C:\\Users\\paulo\\eclipse-workspace\\DSys\\SDistribuidos\\Usuários.txt";
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
     private final ReentrantReadWriteLock.ReadLock readLock = lock.readLock();
     private final ReentrantReadWriteLock.WriteLock writeLock = lock.writeLock();
@@ -23,14 +23,15 @@ public class UsuarioService {
     private void inicializarUserDatabase() {
         writeLock.lock();
         try {
-            File file = new File(FILE_PATH);
+            File file = new File(USERS_FILE_PATH);
             if (!file.exists()) {
                 file.getParentFile().mkdirs();
                 file.createNewFile();
             }
             if (file.length() == 0) {
                 List<UsuarioDBModel> usuarios = new ArrayList<>();
-                usuarios.add(new UsuarioDBModel("1", "admin", "admin", "ADMIN_ROLE"));
+                // --- MUDANÇA AQUI ---
+                usuarios.add(new UsuarioDBModel("1", "admin", "admin", "admin")); // Antes era "ADMIN_ROLE"
                 salvarTodosUsuarios(usuarios);
                 System.out.println("Arquivo 'Usuários.txt' criado e 'admin' cadastrado.");
             }
@@ -40,18 +41,16 @@ public class UsuarioService {
             writeLock.unlock();
         }
     }
-    
 
     private List<UsuarioDBModel> lerTodosUsuarios() throws IOException {
-
-        return Files.lines(Paths.get(FILE_PATH))
+        return Files.lines(Paths.get(USERS_FILE_PATH))
                 .map(UsuarioDBModel::deCsvString)
                 .filter(java.util.Objects::nonNull)
                 .collect(Collectors.toList());
     }
 
     private void salvarTodosUsuarios(List<UsuarioDBModel> usuarios) throws IOException {
-        try (PrintWriter writer = new PrintWriter(new FileWriter(FILE_PATH, false))) {
+        try (PrintWriter writer = new PrintWriter(new FileWriter(USERS_FILE_PATH, false))) {
             for (UsuarioDBModel user : usuarios) {
                 writer.println(user.paraCsvString());
             }
@@ -72,7 +71,10 @@ public class UsuarioService {
             }
             int maxId = usuarios.stream().mapToInt(u -> Integer.parseInt(u.getId())).max().orElse(0);
             String novoId = String.valueOf(maxId + 1);
-            usuarios.add(new UsuarioDBModel(novoId, nome, senha, "USER_ROLE"));
+            
+            // --- MUDANÇA AQUI ---
+            usuarios.add(new UsuarioDBModel(novoId, nome, senha, "user")); // Antes era "USER_ROLE"
+            
             salvarTodosUsuarios(usuarios);
             System.out.println("Usuário criado: " + nome);
             return "201";
@@ -91,7 +93,7 @@ public class UsuarioService {
             Optional<UsuarioDBModel> usuario = usuarios.stream()
                     .filter(u -> u.getNome().equals(nome) && u.getSenha().equals(senha))
                     .findFirst();
-            return usuario.orElse(null);
+            return usuario.orElse(null); 
         } catch (IOException e) {
             e.printStackTrace();
             return null;
@@ -121,7 +123,6 @@ public class UsuarioService {
             return "405";
         }
         if ("admin".equalsIgnoreCase(nome)) {
-            System.err.println("Tentativa ilegal de editar o 'admin'.");
             return "403";
         }
         writeLock.lock();
@@ -152,7 +153,6 @@ public class UsuarioService {
 
     public String excluirUsuarioProprio(String nome) {
         if ("admin".equalsIgnoreCase(nome)) {
-            System.err.println("Tentativa ilegal de excluir o 'admin'.");
             return "403";
         }
         writeLock.lock();
@@ -177,7 +177,6 @@ public class UsuarioService {
     public List<UsuarioDBModel> listarTodosUsuarios() {
         readLock.lock();
         try {
-            
             return new ArrayList<>(lerTodosUsuarios());
         } catch (IOException e) {
             e.printStackTrace();
@@ -229,19 +228,17 @@ public class UsuarioService {
     public String adminExcluirUsuarioPorId(String idUsuarioAlvo) {
         if ("1".equals(idUsuarioAlvo)) {
             System.err.println("Tentativa ilegal de excluir o 'admin' (ID: 1).");
-            return "403"; // Proibido
+            return "403";
         }
 
         writeLock.lock();
         try {
             List<UsuarioDBModel> usuarios = lerTodosUsuarios();
-            
             boolean removeu = usuarios.removeIf(u -> u.getId().equals(idUsuarioAlvo));
 
             if (removeu) {
                 salvarTodosUsuarios(usuarios);
                 System.out.println("Admin excluiu o usuário ID: " + idUsuarioAlvo);
-                // TODO: Excluir também todas as REVIEWS deste usuário.
                 return "200";
             } else {
                 return "404";

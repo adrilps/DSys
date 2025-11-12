@@ -1,7 +1,7 @@
 package testes_SD;
 
 public class UserClass {
-        public String operacao = "LOGIN"; // public so Jackson can see it
+        public String operacao = "LOGIN";
         public String usuario;
         public String senha;
 

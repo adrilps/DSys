@@ -4,7 +4,7 @@ public class UsuarioDBModel {
 	private String id;
     private String nome;
     private String senha;
-    private String role; // "ADMIN_ROLE" ou "USER_ROLE"
+    private String role; // "admin" ou "user"
 
     public UsuarioDBModel(String id, String nome, String senha, String role) {
         this.id = id;
