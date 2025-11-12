@@ -17,10 +17,10 @@ public class UsuarioService {
     private final ReentrantReadWriteLock.WriteLock writeLock = lock.writeLock();
 
     public UsuarioService() {
-        inicializarDatabase();
+        inicializarUserDatabase();
     }
 
-    private void inicializarDatabase() {
+    private void inicializarUserDatabase() {
         writeLock.lock();
         try {
             File file = new File(FILE_PATH);
@@ -40,6 +40,7 @@ public class UsuarioService {
             writeLock.unlock();
         }
     }
+    
 
     private List<UsuarioDBModel> lerTodosUsuarios() throws IOException {
 
@@ -213,6 +214,34 @@ public class UsuarioService {
             if (encontrou) {
                 salvarTodosUsuarios(usuarios);
                 System.out.println("Admin atualizou senha do usuário: " + nomeUsuario + " (ID: " + idUsuarioAlvo + ")");
+                return "200";
+            } else {
+                return "404";
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            return "500";
+        } finally {
+            writeLock.unlock();
+        }
+    }
+    
+    public String adminExcluirUsuarioPorId(String idUsuarioAlvo) {
+        if ("1".equals(idUsuarioAlvo)) {
+            System.err.println("Tentativa ilegal de excluir o 'admin' (ID: 1).");
+            return "403"; // Proibido
+        }
+
+        writeLock.lock();
+        try {
+            List<UsuarioDBModel> usuarios = lerTodosUsuarios();
+            
+            boolean removeu = usuarios.removeIf(u -> u.getId().equals(idUsuarioAlvo));
+
+            if (removeu) {
+                salvarTodosUsuarios(usuarios);
+                System.out.println("Admin excluiu o usuário ID: " + idUsuarioAlvo);
+                // TODO: Excluir também todas as REVIEWS deste usuário.
                 return "200";
             } else {
                 return "404";

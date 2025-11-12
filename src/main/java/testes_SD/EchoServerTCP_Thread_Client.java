@@ -16,6 +16,10 @@ public class EchoServerTCP_Thread_Client {
     private static ObjectMapper mapper = new ObjectMapper();
 
     public static void main(String[] args) throws IOException {
+    	
+    	ClientView view = new ClientView();
+    	ClientModel model = new ClientModel();
+    	ClientController controller = new ClientController(view, model);
 
         BufferedReader consoleReader = new BufferedReader(new InputStreamReader(System.in));
         System.out.println("Qual o IP do servidor? ");
@@ -29,7 +33,9 @@ public class EchoServerTCP_Thread_Client {
         try (
                 Socket echoSocket = new Socket(serverIP, serverPort);
                 PrintWriter out = new PrintWriter(echoSocket.getOutputStream(), true);
-                BufferedReader in = new BufferedReader(new InputStreamReader(echoSocket.getInputStream()))) {
+                BufferedReader in = new BufferedReader(new InputStreamReader(echoSocket.getInputStream()))
+            )
+        {
             System.out.println("Conectado!");
 
             boolean running = true;
@@ -318,5 +324,9 @@ public class EchoServerTCP_Thread_Client {
         String jsonResponse = in.readLine();
         System.out.println("Servidor retornou: " + jsonResponse);
         return jsonResponse;
+    }
+    
+    private static void cadastrarFilme() {
+    	
     }
 }
