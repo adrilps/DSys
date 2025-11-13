@@ -32,7 +32,12 @@ public class ClientView {
         }
 
         if (response.has("status") && response.get("status").asText().startsWith("2")) {
-            System.out.println("Sucesso: " + response.get("mensagem").asText());
+            
+            if (response.has("mensagem")) {
+                System.out.println("Sucesso: " + response.get("mensagem").asText());
+            } else {
+                System.out.println("Sucesso: Operação realizada.");
+            }
             
             if (response.has("usuario")) {
                 if (response.get("usuario").isTextual()) {

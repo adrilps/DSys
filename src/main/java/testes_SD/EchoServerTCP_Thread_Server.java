@@ -2,7 +2,7 @@ package testes_SD;
 
 import java.net.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationFeature; // Importar
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.auth0.jwt.interfaces.DecodedJWT;
@@ -16,13 +16,12 @@ public class EchoServerTCP_Thread_Server extends Thread {
 
     protected Socket clientSocket;
     
-    // ObjectMapper configurado para ignorar propriedades desconhecidas (como o "id" no DTO)
     private final ObjectMapper objectMapper = new ObjectMapper()
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
             
     private final UsuarioService usuarioService;
     private final AuthService authService;
-    private final MovieService movieService; // Assumindo que o MovieService está sendo injetado
+    private final MovieService movieService;
     
     private String nomeUsuarioLogado = null;
     private String roleUsuarioLogado = null;
@@ -38,7 +37,7 @@ public class EchoServerTCP_Thread_Server extends Thread {
 
         final UsuarioService usuarioService = new UsuarioService();
         final AuthService authService = new AuthService();
-        final MovieService movieService = new MovieService(); // Inicializa o MovieService
+        final MovieService movieService = new MovieService();
 
         try {
             serverSocket = new ServerSocket(porta);
@@ -49,7 +48,6 @@ public class EchoServerTCP_Thread_Server extends Thread {
                     String clientIpAddress = newClientSocket.getInetAddress().getHostAddress();
                     System.out.println("Accept ativado. Novo cliente conectado de: " + clientIpAddress + "\n");
                     
-                    // Injeta todos os serviços na thread
                     new EchoServerTCP_Thread_Server(newClientSocket, usuarioService, authService, movieService);
                 }
             } catch (IOException e) {
@@ -69,12 +67,11 @@ public class EchoServerTCP_Thread_Server extends Thread {
         }
     }
 
-    // Construtor atualizado para receber o MovieService
     private EchoServerTCP_Thread_Server(Socket clientSoc, UsuarioService uService, AuthService aService, MovieService mService) {
         this.clientSocket = clientSoc;
         this.usuarioService = uService;
         this.authService = aService;
-        this.movieService = mService; // Atribui o MovieService
+        this.movieService = mService;
         start();
     }
 
@@ -98,7 +95,6 @@ public class EchoServerTCP_Thread_Server extends Thread {
                     if (requestNode.has("operacao")) {
                         operacao = requestNode.get("operacao").asText().toUpperCase();
                     } else {
-                        // 422: Campos faltantes (sem "operacao")
                         sendJsonError(out, "422", "Erro: Chaves faltantes ou invalidas (sem 'operacao')");
                         continue;
                     }
@@ -110,7 +106,6 @@ public class EchoServerTCP_Thread_Server extends Thread {
                         this.roleUsuarioLogado = null;
 
                         if (!requestNode.has("token")) {
-                            // 422: Campos faltantes (sem "token")
                             sendJsonError(out, "422", "Erro: Chaves faltantes ou invalidas (sem 'token')");
                             continue;
                         }
@@ -118,7 +113,6 @@ public class EchoServerTCP_Thread_Server extends Thread {
                         DecodedJWT jwtValido = authService.validarToken(token);
 
                         if (jwtValido == null) {
-                            // 401: Token inválido
                             sendJsonError(out, "401", "Erro: Token inválido");
                             continue;
                         }
@@ -126,9 +120,7 @@ public class EchoServerTCP_Thread_Server extends Thread {
                         this.roleUsuarioLogado = jwtValido.getClaim("funcao").asString();
                     }
 
-                    // 2. Distribuir (Dispatch)
                     switch (operacao) {
-                        // --- Usuário ---
                         case "LOGIN":
                             replyLogin(inputLine, out);
                             break;
@@ -149,8 +141,6 @@ public class EchoServerTCP_Thread_Server extends Thread {
                             replyExcluirProprioUsuario(out);
                             operacaoEncerra = true;
                             break;
-
-                        // --- Admin (Usuários) ---
                         case "LISTAR_USUARIOS":
                             replyListarUsuarios(out);
                             break;
@@ -160,8 +150,6 @@ public class EchoServerTCP_Thread_Server extends Thread {
                         case "ADMIN_EXCLUIR_USUARIO":
                             replyAdminExcluirUsuario(inputLine, out);
                             break;
-
-                        // --- Filmes ---
                         case "CRIAR_FILME":
                             replyAdminCreateMovie(inputLine, out);
                             break;
@@ -174,9 +162,7 @@ public class EchoServerTCP_Thread_Server extends Thread {
                         case "LISTAR_FILMES":
                             replyListarFilmes(out);
                             break;
-
                         default:
-                            // 400: Requisição mal feita (operação desconhecida)
                             sendJsonError(out, "400", "Erro: Operação não encontrada ou inválida");
                     }
 
@@ -185,10 +171,8 @@ public class EchoServerTCP_Thread_Server extends Thread {
                     }
 
                 } catch (JsonProcessingException e) {
-                    // 400: O JSON enviado não pôde ser lido
                     sendJsonError(out, "400", "Erro: JSON mal formatado");
                 } catch (Exception e) {
-                    // 500: Erro inesperado no servidor
                     e.printStackTrace();
                     sendJsonError(out, "500", "Erro: Falha interna do servidor");
                 }
@@ -196,11 +180,9 @@ public class EchoServerTCP_Thread_Server extends Thread {
             System.out.println("Cliente " + (this.nomeUsuarioLogado != null ? this.nomeUsuarioLogado : "[NAO LOGADO]") + " desconectado.");
 
         } catch (IOException e) {
-            System.err.println("Problema com Servidor de Comunicacao! " + e.getMessage());
+            System.err.println("Problema com Servidor de Communicacao! " + e.getMessage());
         }
     }
-
-    // --- Métodos de Resposta (JSON) ---
 
     private void sendJsonError(PrintWriter out, String status, String mensagem) {
         try {
@@ -231,8 +213,6 @@ public class EchoServerTCP_Thread_Server extends Thread {
         }
     }
 
-    // --- Handlers de Usuário ---
-
     public void replyLogin(String recievedJson, PrintWriter out) {
         try {
             UserClass obj = objectMapper.readValue(recievedJson, UserClass.class);
@@ -247,11 +227,9 @@ public class EchoServerTCP_Thread_Server extends Thread {
                 data.put("token", tokenGerado);
                 sendJsonSuccess(out, "200", "Sucesso: operação realizada com sucesso", data);
             } else {
-                // 401: Credenciais inválidas (conforme a tabela)
                 sendJsonError(out, "401", "Erro: Credenciais inválidas");
             }
         } catch (JsonProcessingException e) {
-            // 422: Faltam "usuario" ou "senha"
             sendJsonError(out, "422", "Erro: Chaves faltantes ou invalidas no JSON de login");
         }
     }
@@ -260,7 +238,6 @@ public class EchoServerTCP_Thread_Server extends Thread {
         try {
             JsonNode requestNode = objectMapper.readTree(recievedJson);
             if (!requestNode.has("usuario") || !requestNode.get("usuario").has("nome") || !requestNode.get("usuario").has("senha")) {
-                // 422: Campos faltantes
                 sendJsonError(out, "422", "Erro: Chaves faltantes (esperado 'usuario.nome' e 'usuario.senha')");
                 return;
             }
@@ -275,7 +252,6 @@ public class EchoServerTCP_Thread_Server extends Thread {
                 case "500": sendJsonError(out, "500", "Erro: Falha interna do servidor"); break;
             }
         } catch (JsonProcessingException e) {
-            // 400: JSON mal formatado
             sendJsonError(out, "400", "Erro: JSON mal formatado");
         }
     }
@@ -289,7 +265,6 @@ public class EchoServerTCP_Thread_Server extends Thread {
     public void replyListarProprioUsuario(PrintWriter out) {
         UsuarioDBModel user = usuarioService.buscarUsuarioPorNome(this.nomeUsuarioLogado);
         if (user == null) {
-            // 404: Usuário do token não existe mais
             sendJsonError(out, "404", "Erro: Recurso (usuário) inexistente");
             return;
         }
@@ -302,7 +277,6 @@ public class EchoServerTCP_Thread_Server extends Thread {
         try {
             JsonNode requestNode = objectMapper.readTree(recievedJson);
             if (!requestNode.has("usuario") || !requestNode.get("usuario").has("senha")) {
-                // 422: Campos faltantes
                 sendJsonError(out, "422", "Erro: Chaves faltantes (esperado 'usuario.senha')");
                 return;
             }
@@ -334,11 +308,8 @@ public class EchoServerTCP_Thread_Server extends Thread {
         }
     }
 
-    // --- Handlers de Admin ---
-
     public void replyListarUsuarios(PrintWriter out) {
         if (!"admin".equals(this.roleUsuarioLogado)) {
-            // 403: Sem permissão
             sendJsonError(out, "403", "Erro: sem permissão");
             return;
         }
@@ -357,14 +328,12 @@ public class EchoServerTCP_Thread_Server extends Thread {
 
     public void replyAdminEditarUsuario(String recievedJson, PrintWriter out) {
         if (!"admin".equals(this.roleUsuarioLogado)) {
-            // 403: Sem permissão
             sendJsonError(out, "403", "Erro: sem permissão");
             return;
         }
         try {
             JsonNode requestNode = objectMapper.readTree(recievedJson);
             if (!requestNode.has("id") || !requestNode.has("usuario") || !requestNode.get("usuario").has("senha")) {
-                // 422: Campos faltantes
                 sendJsonError(out, "422", "Erro: Chaves faltantes (esperado 'id' e 'usuario.senha')");
                 return;
             }
@@ -386,14 +355,12 @@ public class EchoServerTCP_Thread_Server extends Thread {
 
     public void replyAdminExcluirUsuario(String recievedJson, PrintWriter out) {
         if (!"admin".equals(this.roleUsuarioLogado)) {
-            // 403: Sem permissão
             sendJsonError(out, "403", "Erro: sem permissão");
             return;
         }
         try {
             JsonNode requestNode = objectMapper.readTree(recievedJson);
             if (!requestNode.has("id")) {
-                // 422: Campos faltantes
                 sendJsonError(out, "422", "Erro: Chaves faltantes (esperado 'id')");
                 return;
             }
@@ -411,25 +378,20 @@ public class EchoServerTCP_Thread_Server extends Thread {
         }
     }
 
-    // --- Handlers de Filmes ---
-
     public void replyAdminCreateMovie(String recievedJson, PrintWriter out) {
         if (!"admin".equals(this.roleUsuarioLogado)) {
-            // 403: Sem permissão
             sendJsonError(out, "403", "Erro: sem permissão");
             return;
         }
         try {
             JsonNode requestNode = objectMapper.readTree(recievedJson);
             if (!requestNode.has("filme")) {
-                // 422: Campos faltantes
                 sendJsonError(out, "422", "Erro: Chaves faltantes (esperado 'filme')");
                 return;
             }
             JsonNode filmeNode = requestNode.get("filme");
             MovieClass movieDTO = objectMapper.treeToValue(filmeNode, MovieClass.class);
 
-            // 422: Campos faltantes (ou nulos) dentro do objeto 'filme'
             if (movieDTO == null || movieDTO.getTitulo() == null || movieDTO.getGenero() == null || movieDTO.getDiretor() == null || movieDTO.getAno() == null) {
                  sendJsonError(out, "422", "Erro: Campos faltantes no objeto 'filme' (titulo, diretor, ano, genero)");
                  return;
@@ -449,14 +411,12 @@ public class EchoServerTCP_Thread_Server extends Thread {
 
     public void replyAdminEditarFilme(String recievedJson, PrintWriter out) {
         if (!"admin".equals(this.roleUsuarioLogado)) {
-            // 403: Sem permissão
             sendJsonError(out, "403", "Erro: sem permissão");
             return;
         }
         try {
             JsonNode requestNode = objectMapper.readTree(recievedJson);
             if (!requestNode.has("filme") || !requestNode.get("filme").has("id")) {
-                // 422: Campos faltantes
                 sendJsonError(out, "422", "Erro: Chaves faltantes (esperado 'filme' e 'filme.id')");
                 return;
             }
@@ -464,7 +424,6 @@ public class EchoServerTCP_Thread_Server extends Thread {
             String idFilme = filmeNode.get("id").asText();
             MovieClass movieDTO = objectMapper.treeToValue(filmeNode, MovieClass.class);
 
-            // 422: Campos faltantes dentro do objeto 'filme'
             if (movieDTO == null || movieDTO.getTitulo() == null || movieDTO.getGenero() == null || movieDTO.getDiretor() == null || movieDTO.getAno() == null) {
                  sendJsonError(out, "422", "Erro: Campos faltantes no objeto 'filme' (titulo, diretor, ano, genero)");
                  return;
@@ -484,14 +443,12 @@ public class EchoServerTCP_Thread_Server extends Thread {
 
     public void replyAdminExcluirFilme(String recievedJson, PrintWriter out) {
         if (!"admin".equals(this.roleUsuarioLogado)) {
-            // 403: Sem permissão
             sendJsonError(out, "403", "Erro: sem permissão");
             return;
         }
         try {
             JsonNode requestNode = objectMapper.readTree(recievedJson);
             if (!requestNode.has("id")) {
-                // 422: Campos faltantes
                 sendJsonError(out, "422", "Erro: Chaves faltantes (esperado 'id')");
                 return;
             }
@@ -509,8 +466,6 @@ public class EchoServerTCP_Thread_Server extends Thread {
     }
 
     public void replyListarFilmes(PrintWriter out) {
-        // A autenticação (token válido) já foi verificada no 'run()'
-        
         List<MovieDBModel> filmesDoDB = movieService.listarTodosFilmes();
         List<Map<String, Object>> filmesParaJson = new ArrayList<>();
         for (MovieDBModel filme : filmesDoDB) {
