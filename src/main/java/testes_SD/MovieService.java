@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
+import java.util.Locale;
 
 
 public class MovieService {
@@ -172,7 +173,6 @@ public class MovieService {
             List<MovieDBModel> filmes = lerTodosFilmes();
             MovieDBModel filmeAlvo = null;
 
-
             for (MovieDBModel filme : filmes) {
                 if (filme.getId().equals(idFilme)) {
                     filmeAlvo = filme;
@@ -180,52 +180,44 @@ public class MovieService {
                 }
             }
 
-            if (filmeAlvo == null) {
-                return "404"; 
-            }
+            if (filmeAlvo == null) return "404";
 
-
-            double mediaAtual = Double.parseDouble(filmeAlvo.getNota());
+            // Garante que lemos com ponto, mesmo se salvou com vírgula antes
+            double mediaAtual = Double.parseDouble(filmeAlvo.getNota().replace(",", "."));
             int n = Integer.parseInt(filmeAlvo.getQtd_avaliacoes());
-            
-            double novaMedia;
-            int novoN;
 
+            double novaMedia = 0.0;
+            int novoN = n;
 
             switch (operacao.toUpperCase()) {
                 case "ADD":
                     novoN = n + 1;
-
                     novaMedia = (mediaAtual * n + notaDaReview) / novoN;
                     break;
-                
                 case "DELETE":
                     novoN = n - 1;
-
                     novaMedia = (novoN == 0) ? 0.0 : (mediaAtual * n - notaDaReview) / novoN;
                     break;
-
                 case "UPDATE":
-                    novoN = n;
-                    if (novoN == 0) {
-                         novaMedia = 0.0;
-                    } else {
-                         novaMedia = (mediaAtual * n - notaAntiga + notaDaReview) / n;
+                    // (media * n) - notaAntiga + notaNova / n
+                    if (n > 0) {
+                        novaMedia = (mediaAtual * n - notaAntiga + notaDaReview) / n;
                     }
                     break;
-                
-                default:
-                    return "500";
             }
 
-            filmeAlvo.setNota(String.format("%.1f", novaMedia).replace(",", "."));
+            // --- CORREÇÃO DE FORMATAÇÃO ---
+            // Usa Locale.US para garantir que o decimal seja PONTO (ex: "4.5")
+            String mediaFormatada = String.format(Locale.US, "%.1f", novaMedia);
+
+            filmeAlvo.setNota(mediaFormatada);
             filmeAlvo.setQtd_avaliacoes(String.valueOf(novoN));
 
             salvarTodosFilmes(filmes);
             return "200";
 
-        } catch (IOException | NumberFormatException e) {
-            e.printStackTrace();
+        } catch (Exception e) {
+            e.printStackTrace(); // Veja no console se aparecer erro aqui
             return "500";
         } finally {
             writeLock.unlock();

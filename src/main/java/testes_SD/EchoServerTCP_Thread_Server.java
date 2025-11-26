@@ -22,6 +22,7 @@ public class EchoServerTCP_Thread_Server extends Thread {
     private final UsuarioService usuarioService;
     private final AuthService authService;
     private final MovieService movieService;
+    private final ReviewService reviewService;
     
     private String nomeUsuarioLogado = null;
     private String roleUsuarioLogado = null;
@@ -38,6 +39,7 @@ public class EchoServerTCP_Thread_Server extends Thread {
         final UsuarioService usuarioService = new UsuarioService();
         final AuthService authService = new AuthService();
         final MovieService movieService = new MovieService();
+        final ReviewService reviewService = new ReviewService();
 
         try {
             serverSocket = new ServerSocket(porta);
@@ -48,7 +50,7 @@ public class EchoServerTCP_Thread_Server extends Thread {
                     String clientIpAddress = newClientSocket.getInetAddress().getHostAddress();
                     System.out.println("Accept ativado. Novo cliente conectado de: " + clientIpAddress + "\n");
                     
-                    new EchoServerTCP_Thread_Server(newClientSocket, usuarioService, authService, movieService);
+                    new EchoServerTCP_Thread_Server(newClientSocket, usuarioService, authService, movieService, reviewService);
                 }
             } catch (IOException e) {
                 System.err.println("Accept falhou!");
@@ -67,11 +69,12 @@ public class EchoServerTCP_Thread_Server extends Thread {
         }
     }
 
-    private EchoServerTCP_Thread_Server(Socket clientSoc, UsuarioService uService, AuthService aService, MovieService mService) {
+    private EchoServerTCP_Thread_Server(Socket clientSoc, UsuarioService uService, AuthService aService, MovieService mService, ReviewService rService) {
         this.clientSocket = clientSoc;
         this.usuarioService = uService;
         this.authService = aService;
         this.movieService = mService;
+        this.reviewService = rService;
         start();
     }
 
@@ -161,6 +164,21 @@ public class EchoServerTCP_Thread_Server extends Thread {
                             break;
                         case "LISTAR_FILMES":
                             replyListarFilmes(out);
+                            break;
+                        case "CRIAR_REVIEW":
+                            replyCriarReview(inputLine, out);
+                            break;
+                        case "LISTAR_REVIEWS_USUARIO":
+                            replyListarReviewsUsuario(out);
+                            break;
+                        case "EDITAR_REVIEW":
+                            replyEditarReview(inputLine, out);
+                            break;
+                        case "EXCLUIR_REVIEW":
+                            replyExcluirReview(inputLine, out);
+                            break;
+                        case "BUSCAR_FILME_ID":
+                            replyBuscarFilmeId(inputLine, out);
                             break;
                         default:
                             sendJsonError(out, "400", "Erro: Operação não encontrada ou inválida");
@@ -453,10 +471,19 @@ public class EchoServerTCP_Thread_Server extends Thread {
                 return;
             }
             String idFilme = requestNode.get("id").asText();
+
+            // 1. Tenta excluir o filme
             String resultado = movieService.excluirFilme(idFilme);
-            
+
             switch (resultado) {
-                case "200": sendJsonSuccess(out, "200", "Sucesso: Recurso (filme) excluído", null); break;
+                case "200":
+                    // --- ALTERAÇÃO AQUI ---
+                    // Se o filme foi excluído com sucesso, limpa as reviews associadas
+                    reviewService.deletarReviewsDoFilme(idFilme);
+                    // -----------------------
+
+                    sendJsonSuccess(out, "200", "Sucesso: Recurso (filme) e suas reviews excluídos", null);
+                    break;
                 case "404": sendJsonError(out, "404", "Erro: Recurso (filme) inexistente"); break;
                 case "500": sendJsonError(out, "500", "Erro: Falha interna do servidor"); break;
             }
@@ -483,5 +510,290 @@ public class EchoServerTCP_Thread_Server extends Thread {
         Map<String, Object> data = new HashMap<>();
         data.put("filmes", filmesParaJson);
         sendJsonSuccess(out, "200", "Sucesso: Operação realizada com sucesso", data);
+    }
+
+    public void replyCriarReview(String recievedJson, PrintWriter out) {
+        // Requer autenticação (nomeUsuarioLogado != null)
+        if (this.nomeUsuarioLogado == null) {
+            sendJsonError(out, "403", "Erro: Você precisa estar logado.");
+            return;
+        }
+
+        try {
+            JsonNode requestNode = objectMapper.readTree(recievedJson);
+            if (!requestNode.has("review")) {
+                sendJsonError(out, "422", "Erro: Chaves faltantes (esperado 'review')");
+                return;
+            }
+
+            JsonNode reviewNode = requestNode.get("review");
+            ReviewClass reviewDTO = objectMapper.treeToValue(reviewNode, ReviewClass.class);
+
+            if (reviewDTO == null || reviewDTO.getId_filme() == null || reviewDTO.getNota() == null) {
+                sendJsonError(out, "422", "Erro: Campos faltantes na review (id_filme, nota)");
+                return;
+            }
+
+            // O nome do usuário vem do token (já validado), não do JSON
+            String resultado = reviewService.criarReview(reviewDTO, this.nomeUsuarioLogado);
+
+            switch (resultado) {
+                case "201":
+                    try {
+                        double notaNova = Double.parseDouble(reviewDTO.getNota());
+                        // Nota antiga é 0.0 porque é uma criação
+                        // Operação é "ADD"
+                        movieService.recalcularMedia(reviewDTO.getId_filme(), notaNova, 0.0, "ADD");
+
+                        System.out.println("Média do filme " + reviewDTO.getId_filme() + " recalculada.");
+
+                    } catch (Exception e) {
+                        System.err.println("Erro ao recalcular média: " + e.getMessage());
+                        // Não paramos o processo, pois a review já foi salva
+                    }
+
+                    // SÓ AGORA enviamos a resposta para o cliente
+                    sendJsonSuccess(out, "201", "Sucesso: Review cadastrada", null);
+
+                    // Se for status 201, devemos atualizar a média no MovieService
+                    // Precisamos buscar a nota antiga (0 se for nova)
+                    // movieService.recalcularMedia(reviewDTO.getId_filme(), Double.parseDouble(reviewDTO.getNota()), 0.0, "ADD");
+                    break;
+                case "405": sendJsonError(out, "405", "Erro: Nota inválida (1-5)"); break;
+                case "409": sendJsonError(out, "409", "Erro: Você já avaliou este filme"); break;
+                case "500": sendJsonError(out, "500", "Erro: Falha interna"); break;
+            }
+
+        } catch (JsonProcessingException e) {
+            sendJsonError(out, "400", "Erro: JSON mal formatado");
+        }
+    }
+
+    public void replyListarReviewsUsuario(PrintWriter out) {
+        // Verifica se está logado
+        if (this.nomeUsuarioLogado == null) {
+            sendJsonError(out, "403", "Erro: Você precisa estar logado.");
+            return;
+        }
+
+        // Busca no serviço
+        List<ReviewDBModel> reviewsDoUsuario = reviewService.listarReviewsPorUsuario(this.nomeUsuarioLogado);
+
+        // Formata para JSON (List of Maps)
+        List<Map<String, String>> reviewsFormatadas = new ArrayList<>();
+        for (ReviewDBModel review : reviewsDoUsuario) {
+            Map<String, String> map = new HashMap<>();
+            map.put("id", review.getId());
+            map.put("id_filme", review.getId_filme());
+            map.put("nome_usuario", review.getNome_usuario());
+            map.put("nota", review.getNota());
+            map.put("titulo", review.getTitulo());
+            map.put("descricao", review.getDescricao());
+            map.put("data", review.getData());
+            reviewsFormatadas.add(map);
+        }
+
+        // Envia
+        Map<String, Object> data = new HashMap<>();
+        data.put("reviews", reviewsFormatadas);
+        sendJsonSuccess(out, "200", "Sucesso: Operação realizada com sucesso", data);
+    }
+
+    public void replyEditarReview(String recievedJson, PrintWriter out) {
+        // Verifica login
+        if (this.nomeUsuarioLogado == null) {
+            sendJsonError(out, "403", "Erro: Você precisa estar logado.");
+            return;
+        }
+
+        try {
+            JsonNode requestNode = objectMapper.readTree(recievedJson);
+
+            // Valida estrutura
+            if (!requestNode.has("review") || !requestNode.get("review").has("id")) {
+                sendJsonError(out, "422", "Erro: Chaves faltantes (esperado 'review.id')");
+                return;
+            }
+
+            JsonNode reviewNode = requestNode.get("review");
+            String idReview = reviewNode.get("id").asText();
+
+            // Mapeia para DTO para facilitar leitura dos dados
+            ReviewClass reviewDTO = objectMapper.treeToValue(reviewNode, ReviewClass.class);
+
+            if (reviewDTO.getNota() == null || !reviewDTO.getNota().matches("[1-5](\\.[0-9])?")) {
+                sendJsonError(out, "405", "Erro: Nota inválida (1-5)");
+                return;
+            }
+
+            // --- LÓGICA DE NEGÓCIO CRÍTICA ---
+
+            // 1. Busca a review original para checar dono e pegar nota antiga
+            ReviewDBModel reviewOriginal = reviewService.buscarReviewPorId(idReview);
+
+            if (reviewOriginal == null) {
+                sendJsonError(out, "404", "Erro: Review não encontrada.");
+                return;
+            }
+
+            // 2. Verifica propriedade (Apenas o dono pode editar)
+            if (!reviewOriginal.getNome_usuario().equals(this.nomeUsuarioLogado)) {
+                sendJsonError(out, "403", "Erro: Você não pode editar a review de outro usuário.");
+                return;
+            }
+
+            // 3. Guarda dados antigos para o recálculo da média
+            double notaAntiga = Double.parseDouble(reviewOriginal.getNota());
+            String idFilme = reviewOriginal.getId_filme();
+
+            // 4. Atualiza a review
+            String resultado = reviewService.atualizarReview(
+                    idReview,
+                    reviewDTO.getTitulo(),
+                    reviewDTO.getDescricao(),
+                    reviewDTO.getNota()
+            );
+
+            if ("200".equals(resultado)) {
+                // 5. Recalcula a média do filme
+                double notaNova = Double.parseDouble(reviewDTO.getNota());
+                // O parametro "UPDATE" usa a fórmula: (M*n - old + new) / n
+                movieService.recalcularMedia(idFilme, notaNova, notaAntiga, "UPDATE");
+
+                sendJsonSuccess(out, "200", "Sucesso: operação realizada com sucesso", null);
+            } else {
+                sendJsonError(out, resultado, "Erro ao atualizar review.");
+            }
+
+        } catch (JsonProcessingException e) {
+            sendJsonError(out, "400", "Erro: JSON mal formatado");
+        } catch (Exception e) {
+            sendJsonError(out, "500", "Erro: Falha interna");
+        }
+    }
+
+    public void replyExcluirReview(String recievedJson, PrintWriter out) {
+        // Verifica login
+        if (this.nomeUsuarioLogado == null) {
+            sendJsonError(out, "403", "Erro: Você precisa estar logado.");
+            return;
+        }
+
+        try {
+            JsonNode requestNode = objectMapper.readTree(recievedJson);
+
+            if (!requestNode.has("id")) {
+                sendJsonError(out, "422", "Erro: Chaves faltantes (esperado 'id')");
+                return;
+            }
+
+            String idReview = requestNode.get("id").asText();
+
+            // --- LÓGICA DE NEGÓCIO ---
+
+            // 1. Busca a review ANTES de apagar para pegar os dados
+            ReviewDBModel reviewAlvo = reviewService.buscarReviewPorId(idReview);
+
+            if (reviewAlvo == null) {
+                sendJsonError(out, "404", "Erro: Review não encontrada.");
+                return;
+            }
+
+            // 2. Verifica Permissão:
+            // Pode apagar se for o DONO da review OU se for ADMIN
+            boolean isDono = reviewAlvo.getNome_usuario().equals(this.nomeUsuarioLogado);
+            boolean isAdmin = "admin".equals(this.roleUsuarioLogado);
+
+            if (!isDono && !isAdmin) {
+                sendJsonError(out, "403", "Erro: Sem permissão para excluir review de outro usuário.");
+                return;
+            }
+
+            // 3. Guarda dados para o recálculo
+            String idFilme = reviewAlvo.getId_filme();
+            double notaParaRemover = Double.parseDouble(reviewAlvo.getNota());
+
+            // 4. Executa a exclusão
+            boolean excluiu = reviewService.deletarReview(idReview);
+
+            if (excluiu) {
+                // 5. Recalcula a média do filme (Operação "DELETE")
+                movieService.recalcularMedia(idFilme, notaParaRemover, 0.0, "DELETE");
+
+                sendJsonSuccess(out, "200", "Sucesso: Review excluída e média atualizada.", null);
+            } else {
+                sendJsonError(out, "500", "Erro: Falha ao excluir review.");
+            }
+
+        } catch (JsonProcessingException e) {
+            sendJsonError(out, "400", "Erro: JSON mal formatado");
+        } catch (Exception e) {
+            e.printStackTrace();
+            sendJsonError(out, "500", "Erro: Falha interna");
+        }
+    }
+
+    public void replyBuscarFilmeId(String recievedJson, PrintWriter out) {
+        try {
+            JsonNode requestNode = objectMapper.readTree(recievedJson);
+            if (!requestNode.has("id_filme")) {
+                sendJsonError(out, "422", "Erro: Chaves faltantes (esperado 'id_filme')");
+                return;
+            }
+            String idFilme = requestNode.get("id_filme").asText();
+
+            // 1. Buscar o Filme (MovieService) - Você precisará adicionar um método 'buscarFilmePorId' público no MovieService
+            //    ou usar o listarTodosFilmes() e filtrar (menos eficiente, mas funciona)
+            MovieDBModel filme = null;
+            for (MovieDBModel f : movieService.listarTodosFilmes()) {
+                if (f.getId().equals(idFilme)) {
+                    filme = f;
+                    break;
+                }
+            }
+
+            if (filme == null) {
+                sendJsonError(out, "404", "Erro: Filme não encontrado");
+                return;
+            }
+
+            // 2. Buscar as Reviews (ReviewService)
+            List<ReviewDBModel> reviews = reviewService.listarReviewsDoFilme(idFilme);
+
+            // 3. Montar a resposta
+            Map<String, Object> data = new HashMap<>();
+
+            // Objeto Filme
+            Map<String, Object> filmeMap = new HashMap<>();
+            filmeMap.put("id", filme.getId());
+            filmeMap.put("titulo", filme.getTitulo());
+            filmeMap.put("diretor", filme.getDiretor());
+            filmeMap.put("ano", filme.getAno());
+            filmeMap.put("genero", filme.getGenero());
+            filmeMap.put("nota", filme.getNota());
+            filmeMap.put("qtd_avaliacoes", filme.getQtd_avaliacoes());
+            filmeMap.put("sinopse", filme.getSinopse());
+            data.put("filme", filmeMap);
+
+            // Lista de Reviews
+            List<Map<String, String>> reviewsList = new ArrayList<>();
+            for (ReviewDBModel r : reviews) {
+                Map<String, String> rMap = new HashMap<>();
+                rMap.put("id", r.getId());
+                rMap.put("id_filme", r.getId_filme());
+                rMap.put("nome_usuario", r.getNome_usuario());
+                rMap.put("nota", r.getNota());
+                rMap.put("titulo", r.getTitulo());
+                rMap.put("descricao", r.getDescricao());
+                rMap.put("data", r.getData());
+                reviewsList.add(rMap);
+            }
+            data.put("reviews", reviewsList);
+
+            sendJsonSuccess(out, "200", "Sucesso: operação realizada com sucesso", data);
+
+        } catch (JsonProcessingException e) {
+            sendJsonError(out, "400", "Erro: JSON mal formatado");
+        }
     }
 }

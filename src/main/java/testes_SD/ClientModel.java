@@ -241,4 +241,72 @@ public class ClientModel {
         String jsonResponse = sendAndReceive(jsonRequest);
         return mapper.readTree(jsonResponse);
     }
+
+    public JsonNode createReview(String idFilme, Map<String, String> reviewData) throws IOException {
+        Map<String, Object> reviewObj = new HashMap<>();
+        reviewObj.put("id_filme", idFilme);
+        reviewObj.put("titulo", reviewData.get("titulo"));
+        reviewObj.put("descricao", reviewData.get("descricao"));
+        reviewObj.put("nota", reviewData.get("nota"));
+
+        Map<String, Object> requestMap = new HashMap<>();
+        requestMap.put("operacao", "CRIAR_REVIEW");
+        requestMap.put("token", this.tokenJWT);
+        requestMap.put("review", reviewObj);
+
+        String jsonRequest = mapper.writeValueAsString(requestMap);
+        String jsonResponse = sendAndReceive(jsonRequest);
+        return mapper.readTree(jsonResponse);
+    }
+
+    public JsonNode listarMinhasReviews() throws IOException {
+        Map<String, Object> requestMap = new HashMap<>();
+        requestMap.put("operacao", "LISTAR_REVIEWS_USUARIO");
+        requestMap.put("token", this.tokenJWT);
+
+        String jsonRequest = mapper.writeValueAsString(requestMap);
+        String jsonResponse = sendAndReceive(jsonRequest);
+        return mapper.readTree(jsonResponse);
+    }
+
+    public JsonNode editReview(Map<String, String> reviewData) throws IOException {
+        // Monta objeto review
+        Map<String, Object> reviewObj = new HashMap<>();
+        reviewObj.put("id", reviewData.get("id"));
+        reviewObj.put("titulo", reviewData.get("titulo"));
+        reviewObj.put("descricao", reviewData.get("descricao"));
+        reviewObj.put("nota", reviewData.get("nota"));
+
+        // Monta requisição principal
+        Map<String, Object> requestMap = new HashMap<>();
+        requestMap.put("operacao", "EDITAR_REVIEW");
+        requestMap.put("token", this.tokenJWT);
+        requestMap.put("review", reviewObj);
+
+        String jsonRequest = mapper.writeValueAsString(requestMap);
+        String jsonResponse = sendAndReceive(jsonRequest);
+        return mapper.readTree(jsonResponse);
+    }
+
+    public JsonNode deleteReview(String idReview) throws IOException {
+        Map<String, Object> requestMap = new HashMap<>();
+        requestMap.put("operacao", "EXCLUIR_REVIEW");
+        requestMap.put("token", this.tokenJWT);
+        requestMap.put("id", idReview); // Envia apenas o ID da review
+
+        String jsonRequest = mapper.writeValueAsString(requestMap);
+        String jsonResponse = sendAndReceive(jsonRequest);
+        return mapper.readTree(jsonResponse);
+    }
+
+    public JsonNode getMovieDetails(String idFilme) throws IOException {
+        Map<String, Object> requestMap = new HashMap<>();
+        requestMap.put("operacao", "BUSCAR_FILME_ID");
+        requestMap.put("id_filme", idFilme);
+        requestMap.put("token", this.tokenJWT); // Enviamos o token por segurança
+
+        String jsonRequest = mapper.writeValueAsString(requestMap);
+        String jsonResponse = sendAndReceive(jsonRequest);
+        return mapper.readTree(jsonResponse);
+    }
 }

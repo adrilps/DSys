@@ -72,6 +72,25 @@ public class ClientView {
                     System.out.println("    -----------------");
                 }
             }
+
+            if (response.has("reviews")) {
+                System.out.println(" -> Suas Reviews:");
+                JsonNode reviewsArray = response.get("reviews");
+
+                if (reviewsArray.isEmpty()) {
+                    System.out.println("    (Você ainda não fez nenhuma review)");
+                } else {
+                    for (JsonNode r : reviewsArray) {
+                        System.out.println("    -----------------");
+                        System.out.println("    ID Review: " + r.get("id").asText() + " | ID Filme: " + r.get("id_filme").asText());
+                        System.out.println("    Data: " + r.get("data").asText());
+                        System.out.println("    Nota: " + r.get("nota").asText() + "/5");
+                        System.out.println("    Título: " + r.get("titulo").asText());
+                        System.out.println("    Descrição: " + r.get("descricao").asText());
+                    }
+                    System.out.println("    -----------------");
+                }
+            }
             // TODO: Adicionar 'if' aqui para 'reviews', etc.
 
         } else {
@@ -243,10 +262,45 @@ public class ClientView {
 
         return movieData;
     }
+
+    public Map<String, String> promptForReview(String idFilme) throws IOException {
+        Map<String, String> reviewData = new HashMap<>();
+        System.out.println("\n--- Criar Review para Filme ID: " + idFilme + " ---");
+
+        System.out.print("Título da Review: ");
+        reviewData.put("titulo", consoleReader.readLine());
+
+        System.out.print("Descrição: ");
+        reviewData.put("descricao", consoleReader.readLine());
+
+        System.out.print("Nota (1 a 5): ");
+        reviewData.put("nota", consoleReader.readLine());
+
+        return reviewData;
+    }
     
     public String promptForId(String resourceName, String acao) throws IOException {
         System.out.println("\n--- " + acao + " " + resourceName + " ---");
         System.out.print("Digite o ID do " + resourceName + ": ");
         return consoleReader.readLine();
+    }
+
+    public Map<String, String> promptForReviewEdit() throws IOException {
+        Map<String, String> reviewData = new HashMap<>();
+        System.out.println("\n--- Editar Review ---");
+
+        System.out.print("Digite o ID da Review: ");
+        reviewData.put("id", consoleReader.readLine());
+
+        System.out.print("Novo Título: ");
+        reviewData.put("titulo", consoleReader.readLine());
+
+        System.out.print("Nova Descrição: ");
+        reviewData.put("descricao", consoleReader.readLine());
+
+        System.out.print("Nova Nota (1 a 5): ");
+        reviewData.put("nota", consoleReader.readLine());
+
+        return reviewData;
     }
 }

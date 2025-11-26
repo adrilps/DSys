@@ -55,6 +55,10 @@ public class ClientController {
                         case "1": handleViewProfile(); break;
                         case "2": handleUpdatePassword(); break;
                         case "3": handleListarFilmes(); break;
+                        case "4": handleCriarReview(); break; // Ajuste os números conforme necessário
+                        case "5": handleListarMinhasReviews(); break;
+                        case "7": handleExcluirReview(); break;
+                        case "6": handleEditarReview(); break;
                         case "8": if (handleDeleteAccount()) running = false; break;
                         case "9": if (handleLogout()) running = false; break;
                         case "0": running = false; break;
@@ -208,6 +212,38 @@ public class ClientController {
         }
         
         JsonNode response = model.adminExcluirUsuario(idUsuario);
+        view.displayServerResponse(response);
+    }
+
+    private void handleCriarReview() throws IOException {
+        String idFilme = view.promptForId("Filme", "Avaliar");
+        Map<String, String> reviewData = view.promptForReview(idFilme);
+        JsonNode response = model.createReview(idFilme, reviewData);
+        view.displayServerResponse(response);
+    }
+
+    private void handleListarMinhasReviews() throws IOException {
+        JsonNode response = model.listarMinhasReviews();
+        view.displayServerResponse(response);
+    }
+
+    private void handleEditarReview() throws IOException {
+        Map<String, String> reviewData = view.promptForReviewEdit();
+        JsonNode response = model.editReview(reviewData);
+        view.displayServerResponse(response);}
+
+    private void handleExcluirReview() throws IOException {
+        // 1. Pede o ID
+        String idReview = view.promptForId("Review", "Excluir");
+
+        // 2. Confirmação
+        if (!view.promptForConfirmation("Tem certeza que deseja excluir esta review? (s/n)")) {
+            view.displayMessage("Operação cancelada.");
+            return;
+        }
+
+        // 3. Envia requisição
+        JsonNode response = model.deleteReview(idReview);
         view.displayServerResponse(response);
     }
 }
