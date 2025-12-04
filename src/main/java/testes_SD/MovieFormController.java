@@ -2,28 +2,77 @@ package testes_SD;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import javafx.fxml.FXML;
-import javafx.scene.control.Label;
-import javafx.scene.control.TextArea;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 import javafx.stage.Stage;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class MovieFormController {
 
     @FXML private TextField titleField;
     @FXML private TextField directorField;
     @FXML private TextField yearField;
-    @FXML private TextField genreField;
+
+    @FXML private MenuButton genreSelector;
+
     @FXML private TextArea synopsisArea;
     @FXML private Label errorLabel;
 
     private ClientModel model;
-    private boolean saveClicked = false; // Para saber se salvou com sucesso
+    private boolean saveClicked = false;
+
+    private final String[] GENEROS_PADRAO = {
+            "Ação", "Aventura", "Comédia", "Drama", "Fantasia",
+            "Ficção Científica", "Terror", "Romance", "Documentário",
+            "Musical", "Animação"
+    };
 
     public void initialize() {
         this.model = Context.getInstance().getModel();
+
+        yearField.setTextFormatter(new TextFormatter<>(change -> {
+            String newText = change.getControlNewText();
+            if (newText.matches("[0-9]*") && newText.length() <= 4) {
+                return change;
+            }
+            return null;
+        }));
+
+        configurarGeneros();
+    }
+
+    private void configurarGeneros() {
+        for (String genero : GENEROS_PADRAO) {
+            CheckMenuItem item = new CheckMenuItem(genero);
+
+            item.selectedProperty().addListener((obs, wasSelected, isSelected) -> atualizarTextoBotao());
+
+            genreSelector.getItems().add(item);
+        }
+    }
+
+    private void atualizarTextoBotao() {
+        List<String> selecionados = getGenerosSelecionados();
+        if (selecionados.isEmpty()) {
+            genreSelector.setText("Selecione os Gêneros...");
+        } else {
+            genreSelector.setText(String.join(", ", selecionados));
+        }
+    }
+
+    private List<String> getGenerosSelecionados() {
+        List<String> selecionados = new ArrayList<>();
+        for (MenuItem item : genreSelector.getItems()) {
+            if (item instanceof CheckMenuItem) {
+                CheckMenuItem checkItem = (CheckMenuItem) item;
+                if (checkItem.isSelected()) {
+                    selecionados.add(checkItem.getText());
+                }
+            }
+        }
+        return selecionados;
     }
 
     public boolean isSaveClicked() {
@@ -41,11 +90,8 @@ public class MovieFormController {
             movieData.put("ano", yearField.getText());
             movieData.put("sinopse", synopsisArea.getText());
 
-            // Converte string de gêneros para List
-            List<String> generos = Arrays.asList(genreField.getText().trim().split("\\s*,\\s*"));
-            movieData.put("genero", generos);
+            movieData.put("genero", getGenerosSelecionados());
 
-            // Envia ao servidor
             JsonNode response = model.adminCreateMovie(movieData);
 
             if (response.has("status") && response.get("status").asText().equals("201")) {
@@ -73,8 +119,9 @@ public class MovieFormController {
 
     private boolean validarCampos() {
         if (titleField.getText().isEmpty() || directorField.getText().isEmpty() ||
-                yearField.getText().isEmpty() || genreField.getText().isEmpty()) {
-            errorLabel.setText("Por favor, preencha todos os campos obrigatórios.");
+                yearField.getText().isEmpty() || getGenerosSelecionados().isEmpty()) {
+
+            errorLabel.setText("Por favor, preencha todos os campos e selecione ao menos um gênero.");
             return false;
         }
         return true;

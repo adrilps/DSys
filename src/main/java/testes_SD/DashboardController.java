@@ -48,12 +48,9 @@ public class DashboardController {
 
         welcomeLabel.setText("Bem-vindo! (" + role + ")");
 
-        // Configuração de Permissões
         if (!"admin".equals(role)) {
-            // Remove a aba de usuários se não for admin
             mainTabPane.getTabs().remove(tabUsuarios);
 
-            // Desabilita botões de admin na aba de filmes
             btnCriarFilme.setDisable(true);
             btnCriarFilme.setVisible(false);
             btnExcluirFilme.setDisable(true);
@@ -67,18 +64,14 @@ public class DashboardController {
         handleListarFilmes();
     }
 
-    // --- MÉTODOS DE FILMES ---
 
     @FXML
     private void handleListarFilmes() {
         try {
-            // 1. Busca os dados do servidor (Isso pode demorar, bloqueando a UI se não cuidar)
             JsonNode response = model.listarFilmes();
 
-            // 2. Usa Platform.runLater para garantir que a atualização visual seja segura
             javafx.application.Platform.runLater(() -> {
 
-                // Limpa a lista visual ANTES de adicionar novos itens
                 moviesListView.getItems().clear();
 
                 if (response.has("filmes")) {
@@ -88,7 +81,7 @@ public class DashboardController {
                         moviesListView.getItems().add("Nenhum filme encontrado.");
                     } else {
                         for (JsonNode filme : filmesArray) {
-                            // Formato bonito para a lista
+
                             String item = String.format("[%s] %s (%s) - ⭐ %s (%s votos)",
                                     filme.get("id").asText(),
                                     filme.get("titulo").asText(),
@@ -113,26 +106,22 @@ public class DashboardController {
     @FXML
     private void handleCriarFilme() {
         try {
-            // 1. Carregar o FXML do formulário
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/movie_form.fxml"));
             Parent page = loader.load();
 
-            // 2. Criar o Palco (Stage) da janela pop-up
             Stage dialogStage = new Stage();
             dialogStage.setTitle("Cadastrar Novo Filme");
-            dialogStage.initModality(Modality.WINDOW_MODAL); // Bloqueia a janela de trás
+            dialogStage.initModality(Modality.WINDOW_MODAL);
             dialogStage.initOwner(btnCriarFilme.getScene().getWindow());
             Scene scene = new Scene(page);
             dialogStage.setScene(scene);
 
-            // 3. Mostrar e esperar fechar
             dialogStage.showAndWait();
 
-            // 4. Verificar se salvou e atualizar a lista
             MovieFormController controller = loader.getController();
             if (controller.isSaveClicked()) {
                 log("Filme criado com sucesso!");
-                handleListarFilmes(); // Atualiza a lista principal
+                handleListarFilmes();
             }
 
         } catch (IOException e) {
@@ -141,7 +130,6 @@ public class DashboardController {
         }
     }
 
-    // --- MÉTODOS DE USUÁRIOS ---
 
     @FXML
     private void handleListarUsuarios() {
@@ -176,7 +164,6 @@ public class DashboardController {
         }
     }
 
-    // --- MÉTODOS DE PERFIL ---
 
     @FXML
     private void handleUpdatePassword() {
@@ -195,7 +182,7 @@ public class DashboardController {
     @FXML
     private void handleLogout() throws IOException {
         model.logout();
-        App.setRoot("login"); // Volta para a tela de login
+        App.setRoot("login");
     }
 
     @FXML
@@ -217,16 +204,23 @@ public class DashboardController {
         String selectedItem = moviesListView.getSelectionModel().getSelectedItem();
         if (selectedItem == null) return;
 
-        // Usa o novo helper para ser mais seguro
         String extractedId = extrairIdDoItem(selectedItem);
 
         if (extractedId != null) {
             this.selectedMovieId = extractedId;
 
             reviewsHeaderLabel.setText("📝 Reviews do filme ID: " + selectedMovieId);
-            btnAvaliarFilme.setDisable(false);
 
-            // Libera botão de excluir filme apenas se for admin
+            String role = model.getUserRole();
+
+            if ("admin".equals(role)) {
+                btnExcluirFilme.setDisable(false);
+                btnAvaliarFilme.setDisable(true);
+            } else {
+                btnExcluirFilme.setDisable(true);
+                btnAvaliarFilme.setDisable(false);
+            }
+
             if ("admin".equals(model.getUserRole())) {
                 btnExcluirFilme.setDisable(false);
             }
@@ -239,13 +233,10 @@ public class DashboardController {
         try {
             reviewsListView.getItems().clear();
 
-            // 1. Busca os dados no servidor
             JsonNode response = model.getMovieDetails(idFilme);
 
-            // 2. Verifica sucesso
             if (response.has("status") && response.get("status").asText().equals("200")) {
 
-                // 3. Processa a lista de reviews
                 if (response.has("reviews")) {
                     JsonNode reviewsArray = response.get("reviews");
 
@@ -253,8 +244,6 @@ public class DashboardController {
                         reviewsListView.getItems().add("Nenhuma avaliação para este filme ainda.");
                     } else {
                         for (JsonNode review : reviewsArray) {
-                            // Formato: "[ID] Nota/5 - Título (por Usuário)"
-                            // Ex: "[10] 5/5 - Adorei! (por Joao)"
                             String item = String.format("[%s] %s/5 - %s (por %s)\n      %s",
                                     review.get("id").asText(),
                                     review.get("nota").asText(),
@@ -280,7 +269,6 @@ public class DashboardController {
         if (selectedMovieId == null) return;
 
         try {
-            // 1. Pedir Nota
             List<String> notas = new ArrayList<>();
             notas.add("5"); notas.add("4"); notas.add("3"); notas.add("2"); notas.add("1");
             ChoiceDialog<String> dialogNota = new ChoiceDialog<>("5", notas);
@@ -291,7 +279,6 @@ public class DashboardController {
             Optional<String> resultNota = dialogNota.showAndWait();
             if (resultNota.isEmpty()) return;
 
-            // 2. Pedir Título
             TextInputDialog dialogTitulo = new TextInputDialog();
             dialogTitulo.setTitle("Avaliar Filme");
             dialogTitulo.setHeaderText("Título da sua avaliação");
@@ -299,7 +286,6 @@ public class DashboardController {
             Optional<String> resultTitulo = dialogTitulo.showAndWait();
             if (resultTitulo.isEmpty()) return;
 
-            // 3. Pedir Descrição
             TextInputDialog dialogDesc = new TextInputDialog();
             dialogDesc.setTitle("Avaliar Filme");
             dialogDesc.setHeaderText("Escreva sua opinião detalhada");
@@ -307,7 +293,6 @@ public class DashboardController {
             Optional<String> resultDesc = dialogDesc.showAndWait();
             if (resultDesc.isEmpty()) return;
 
-            // 4. Enviar para o Model
             java.util.Map<String, String> reviewData = new java.util.HashMap<>();
             reviewData.put("nota", resultNota.get());
             reviewData.put("titulo", resultTitulo.get());
@@ -317,7 +302,7 @@ public class DashboardController {
 
             if (response.has("status") && response.get("status").asText().equals("201")) {
                 log("Review criada com sucesso!");
-                handleListarFilmes(); // Atualiza a lista para mostrar a nova média
+                handleListarFilmes();
             } else {
                 logError(response.path("mensagem").asText("Erro ao criar review."));
             }
@@ -329,7 +314,6 @@ public class DashboardController {
 
     @FXML
     private void handleExcluirFilme() {
-        // Usa o ID selecionado na lista, em vez de digitar no TextField
         if (selectedMovieId == null) {
             logError("Selecione um filme na lista para excluir.");
             return;
@@ -338,8 +322,8 @@ public class DashboardController {
         try {
             JsonNode response = model.adminExcluirFilme(selectedMovieId);
             log(response.path("mensagem").asText());
-            handleListarFilmes(); // Atualiza a lista
-            selectedMovieId = null; // Reseta seleção
+            handleListarFilmes();
+            selectedMovieId = null;
             btnExcluirFilme.setDisable(true);
         } catch (IOException e) {
             logError(e.getMessage());
@@ -348,7 +332,6 @@ public class DashboardController {
 
     @FXML
     private void handleExcluirReview() {
-        // 1. Pega o item selecionado na lista de reviews (parte de baixo)
         String selectedItem = reviewsListView.getSelectionModel().getSelectedItem();
 
         if (selectedItem == null) {
@@ -356,7 +339,6 @@ public class DashboardController {
             return;
         }
 
-        // 2. Extrai o ID da string "[10] 5/5 - Título..."
         String idReview = extrairIdDoItem(selectedItem);
 
         if (idReview == null) {
@@ -364,21 +346,17 @@ public class DashboardController {
             return;
         }
 
-        // 3. Chama o Model
         try {
             JsonNode response = model.deleteReview(idReview);
 
             if (response.has("status") && response.get("status").asText().equals("200")) {
                 log("Review excluída com sucesso.");
 
-                // 4. ATUALIZAÇÃO DUPLA (Importante!)
 
-                // Recarrega a lista de reviews para remover o item excluído
                 if (this.selectedMovieId != null) {
                     carregarReviews(this.selectedMovieId);
                 }
 
-                // Recarrega a lista de filmes para atualizar a Nota Média (que mudou)
                 handleListarFilmes();
 
             } else {
@@ -398,12 +376,10 @@ public class DashboardController {
                 return itemTexto.substring(start + 1, end);
             }
         } catch (Exception e) {
-            // Ignora erro de parse
         }
         return null;
     }
 
-    // --- HELPERS ---
 
     private void log(String msg) {
         logArea.appendText("INFO: " + msg + "\n");

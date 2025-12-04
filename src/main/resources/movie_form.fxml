@@ -7,6 +7,7 @@
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
+<?import javafx.scene.control.MenuButton?>
 
 <VBox spacing="15.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="testes_SD.MovieFormController">
     <padding>
@@ -20,8 +21,8 @@
     <TextField fx:id="yearField" promptText="Ano (ex: 2025)" />
 
     <VBox spacing="5.0">
-        <Label text="Gêneros (separados por vírgula):" />
-        <TextField fx:id="genreField" promptText="Ex: Ação, Drama, Sci-Fi" />
+        <Label text="Gêneros:" />
+        <MenuButton fx:id="genreSelector" text="Selecione os Gêneros..." maxWidth="Infinity" />
     </VBox>
 
     <VBox spacing="5.0">

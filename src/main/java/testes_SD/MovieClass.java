@@ -11,7 +11,6 @@ public class MovieClass {
     private String sinopse;
 
 
-    // construtor do Jackson
      
     public MovieClass() {
     }

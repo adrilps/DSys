@@ -7,8 +7,7 @@ public class UserClass {
 
         public UserClass() {
         }
-        
-        // Constructor for MyObject
+
         public UserClass(String operation,String user, String pass) {
         	this.operacao = operation;
             this.usuario = user;

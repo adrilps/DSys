@@ -24,7 +24,6 @@ public class App extends Application {
         stage.show();
     }
 
-    // Método utilitário para trocar de tela facilmente
     static void setRoot(String fxml) throws IOException {
         scene.setRoot(loadFXML(fxml));
     }
@@ -40,7 +39,6 @@ public class App extends Application {
 
     @Override
     public void stop() {
-        // Fecha a conexão ao fechar a janela
         Context.getInstance().getModel().disconnect();
     }
 }

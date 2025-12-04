@@ -30,8 +30,7 @@ public class UsuarioService {
             }
             if (file.length() == 0) {
                 List<UsuarioDBModel> usuarios = new ArrayList<>();
-                // --- MUDANÇA AQUI ---
-                usuarios.add(new UsuarioDBModel("1", "admin", "admin", "admin")); // Antes era "ADMIN_ROLE"
+                usuarios.add(new UsuarioDBModel("1", "admin", "admin", "admin"));
                 salvarTodosUsuarios(usuarios);
                 System.out.println("Arquivo 'Usuários.txt' criado e 'admin' cadastrado.");
             }
@@ -71,9 +70,8 @@ public class UsuarioService {
             }
             int maxId = usuarios.stream().mapToInt(u -> Integer.parseInt(u.getId())).max().orElse(0);
             String novoId = String.valueOf(maxId + 1);
-            
-            // --- MUDANÇA AQUI ---
-            usuarios.add(new UsuarioDBModel(novoId, nome, senha, "user")); // Antes era "USER_ROLE"
+
+            usuarios.add(new UsuarioDBModel(novoId, nome, senha, "user"));
             
             salvarTodosUsuarios(usuarios);
             System.out.println("Usuário criado: " + nome);

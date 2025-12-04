@@ -270,7 +270,6 @@ public class ClientModel {
     }
 
     public JsonNode editReview(Map<String, String> reviewData) throws IOException {
-        // Monta objeto review
         Map<String, Object> reviewObj = new HashMap<>();
         reviewObj.put("id", reviewData.get("id"));
         reviewObj.put("titulo", reviewData.get("titulo"));
@@ -292,7 +291,7 @@ public class ClientModel {
         Map<String, Object> requestMap = new HashMap<>();
         requestMap.put("operacao", "EXCLUIR_REVIEW");
         requestMap.put("token", this.tokenJWT);
-        requestMap.put("id", idReview); // Envia apenas o ID da review
+        requestMap.put("id", idReview);
 
         String jsonRequest = mapper.writeValueAsString(requestMap);
         String jsonResponse = sendAndReceive(jsonRequest);
@@ -303,7 +302,7 @@ public class ClientModel {
         Map<String, Object> requestMap = new HashMap<>();
         requestMap.put("operacao", "BUSCAR_FILME_ID");
         requestMap.put("id_filme", idFilme);
-        requestMap.put("token", this.tokenJWT); // Enviamos o token por segurança
+        requestMap.put("token", this.tokenJWT);
 
         String jsonRequest = mapper.writeValueAsString(requestMap);
         String jsonResponse = sendAndReceive(jsonRequest);

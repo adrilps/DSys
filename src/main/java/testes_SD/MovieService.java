@@ -31,14 +31,14 @@ public class MovieService {
         try {
             File file = new File(MOVIES_FILE_PATH);
             if (!file.exists()) {
-                file.getParentFile().mkdirs(); // Cria diretórios se não existirem
+                file.getParentFile().mkdirs();
                 file.createNewFile();
                 System.out.println("Arquivo 'Filmes.txt' criado.");
             }
         } catch (IOException e) {
             System.err.println("Erro crítico ao inicializar o 'Filmes.txt': " + e.getMessage());
         } finally {
-            writeLock.unlock(); // Libera o lock
+            writeLock.unlock();
         }
     }
 
@@ -52,7 +52,7 @@ public class MovieService {
 
 
     private void salvarTodosFilmes(List<MovieDBModel> filmes) throws IOException {
-        try (PrintWriter writer = new PrintWriter(new FileWriter(MOVIES_FILE_PATH, false))) { // false = sobrescrever
+        try (PrintWriter writer = new PrintWriter(new FileWriter(MOVIES_FILE_PATH, false))) {
             for (MovieDBModel filme : filmes) {
                 writer.println(filme.paraCsvString());
             }
@@ -182,7 +182,6 @@ public class MovieService {
 
             if (filmeAlvo == null) return "404";
 
-            // Garante que lemos com ponto, mesmo se salvou com vírgula antes
             double mediaAtual = Double.parseDouble(filmeAlvo.getNota().replace(",", "."));
             int n = Integer.parseInt(filmeAlvo.getQtd_avaliacoes());
 
@@ -199,15 +198,12 @@ public class MovieService {
                     novaMedia = (novoN == 0) ? 0.0 : (mediaAtual * n - notaDaReview) / novoN;
                     break;
                 case "UPDATE":
-                    // (media * n) - notaAntiga + notaNova / n
                     if (n > 0) {
                         novaMedia = (mediaAtual * n - notaAntiga + notaDaReview) / n;
                     }
                     break;
             }
 
-            // --- CORREÇÃO DE FORMATAÇÃO ---
-            // Usa Locale.US para garantir que o decimal seja PONTO (ex: "4.5")
             String mediaFormatada = String.format(Locale.US, "%.1f", novaMedia);
 
             filmeAlvo.setNota(mediaFormatada);
@@ -217,7 +213,7 @@ public class MovieService {
             return "200";
 
         } catch (Exception e) {
-            e.printStackTrace(); // Veja no console se aparecer erro aqui
+            e.printStackTrace();
             return "500";
         } finally {
             writeLock.unlock();

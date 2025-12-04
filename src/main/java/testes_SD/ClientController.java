@@ -233,16 +233,13 @@ public class ClientController {
         view.displayServerResponse(response);}
 
     private void handleExcluirReview() throws IOException {
-        // 1. Pede o ID
         String idReview = view.promptForId("Review", "Excluir");
 
-        // 2. Confirmação
         if (!view.promptForConfirmation("Tem certeza que deseja excluir esta review? (s/n)")) {
             view.displayMessage("Operação cancelada.");
             return;
         }
 
-        // 3. Envia requisição
         JsonNode response = model.deleteReview(idReview);
         view.displayServerResponse(response);
     }

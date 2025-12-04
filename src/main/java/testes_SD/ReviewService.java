@@ -53,23 +53,21 @@ public class ReviewService {
     }
 
     public String criarReview(ReviewClass dto, String nomeUsuario) {
-        // Validações básicas
         if (dto.getNota() == null || !dto.getNota().matches("[1-5](\\.[0-9])?")) {
-            return "405"; // Nota deve ser entre 1 e 5 (aceita decimais simples)
+            return "405";
         }
 
         writeLock.lock();
         try {
             List<ReviewDBModel> reviews = lerTodasReviews();
 
-            // Verifica se usuário já fez review para este filme
             boolean jaFezReview = reviews.stream().anyMatch(r ->
                     r.getId_filme().equals(dto.getId_filme()) &&
                             r.getNome_usuario().equals(nomeUsuario)
             );
 
             if (jaFezReview) {
-                return "409"; // Usuário já avaliou este filme
+                return "409";
             }
 
             int maxId = reviews.stream().mapToInt(r -> Integer.parseInt(r.getId())).max().orElse(0);
@@ -84,7 +82,8 @@ public class ReviewService {
                     dto.getNota(),
                     dto.getTitulo(),
                     dto.getDescricao(),
-                    dataAtual
+                    dataAtual,
+                    "false"
             );
 
             reviews.add(novaReview);
@@ -92,8 +91,6 @@ public class ReviewService {
 
             System.out.println("Review criada: ID " + novoId + " por " + nomeUsuario);
 
-            // NOTA: Aqui você deve chamar MovieService.recalcularMedia()
-            // para atualizar a nota do filme.
 
             return "201";
 
@@ -158,13 +155,10 @@ public class ReviewService {
 
             for (ReviewDBModel r : reviews) {
                 if (r.getId().equals(id)) {
-                    // Atualiza os dados (usando setters que assumimos que existem na DBModel,
-                    // se não existirem, você precisará adicioná-los ou recriar o objeto)
                     r.setTitulo(titulo);
                     r.setDescricao(descricao);
                     r.setNota(novaNota);
-                    // Data poderia ser atualizada aqui se quisesse
-
+                    r.setEditado("true");
                     salvarTodasReviews(reviews);
                     return "200";
                 }
@@ -201,7 +195,6 @@ public class ReviewService {
         writeLock.lock();
         try {
             List<ReviewDBModel> reviews = lerTodasReviews();
-            // removeIf retorna 'true' se algum elemento foi removido
             boolean removeu = reviews.removeIf(r -> r.getId_filme().equals(idFilme));
 
             if (removeu) {

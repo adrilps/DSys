@@ -1,7 +1,6 @@
 package testes_SD;
-
-public class Launcher {
+public class ServerLauncher {
     public static void main(String[] args) {
-        App.main(args);
+        ServerApp.main(args);
     }
 }

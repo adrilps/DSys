@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+
+<VBox spacing="10.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="testes_SD.ServerController">
+    <padding>
+        <Insets bottom="20.0" left="20.0" right="20.0" top="20.0" />
+    </padding>
+
+    <Label text="VoteFlix Server Monitor" textFill="#2c3e50">
+        <font>
+            <Font name="System Bold" size="24.0" />
+        </font>
+    </Label>
+
+    <HBox spacing="10.0" alignment="CENTER_LEFT">
+        <Label text="Porta:" />
+        <TextField fx:id="portField" text="12345" prefWidth="80.0" />
+
+        <Button fx:id="btnStart" text="▶ Iniciar Servidor" onAction="#handleStartServer" style="-fx-background-color: #27ae60; -fx-text-fill: white;" />
+        <Button fx:id="btnStop" text="⏹ Parar" onAction="#handleStopServer" disable="true" style="-fx-background-color: #c0392b; -fx-text-fill: white;" />
+    </HBox>
+
+    <Label text="Log de Atividades:" />
+    <TextArea fx:id="logArea" VBox.vgrow="ALWAYS" editable="false" prefHeight="400.0" wrapText="true" style="-fx-font-family: 'Consolas';">
+        <font>
+            <Font size="13.0" />
+        </font>
+    </TextArea>
+
+    <HBox>
+        <Label fx:id="statusLabel" text="Status: Parado" textFill="GREY" />
+    </HBox>
+</VBox>

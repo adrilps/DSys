@@ -18,7 +18,6 @@ public class LoginController {
     private ClientModel model;
 
     public void initialize() {
-        // Pega a instância única do modelo
         this.model = Context.getInstance().getModel();
     }
 
@@ -30,11 +29,14 @@ public class LoginController {
         String pass = passField.getText();
 
         try {
-            // 1. Tenta conectar (se ainda não estiver conectado)
-            // Nota: Em um app real, verificaríamos se já está conectado antes
-            model.connect(ip, port);
+            boolean conectou = model.connect(ip, port);
 
-            // 2. Tenta fazer login
+            if (!conectou) {
+                statusLabel.setStyle("-fx-text-fill: red;");
+                statusLabel.setText("Erro: Não foi possível conectar ao servidor.");
+                return;
+            }
+
             JsonNode response = model.login(user, pass);
 
             if (response != null && response.has("status") && response.get("status").asText().equals("200")) {
@@ -59,8 +61,6 @@ public class LoginController {
 
     @FXML
     private void handleRegisterButtonAction() {
-        // Lógica rápida de cadastro reutilizando os campos
-        // (Em um app real, abriria outra janela)
         try {
             model.connect(ipField.getText(), Integer.parseInt(portField.getText()));
             JsonNode response = model.createUser(userField.getText(), passField.getText());
